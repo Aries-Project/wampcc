@@ -18,7 +18,7 @@ int main(int, char**)
   try {
     /* Create the wampcc kernel. */
 
-    kernel the_kernel;
+    kernel the_kernel({}, logger::console());
 
     /* Create an embedded wamp router. */
 
@@ -29,7 +29,7 @@ int main(int, char**)
     auth_provider auth = {
       // provider_name
       [](const std::string& realm) { 
-        return "example_auth"; 
+        return "example_auth";
       },
       // policy
       [](const std::string& user, const std::string& realm) {

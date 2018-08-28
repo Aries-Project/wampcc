@@ -112,6 +112,9 @@ struct auth_provider
                 const std::string& uri,
                 action)> authorize;
 
+  std::function< void(const std::string& method, json_object &extra, json_object details)> hello;
+  std::function< void(const std::string& signiture, json_object extra)> authenticate;
+
   /* Create an auth_provider object which implements a
    * no-authentication-required policy. */
   static auth_provider no_auth_required() {
@@ -144,6 +147,7 @@ struct client_credentials
   std::string authid;
   std::vector< std::string > authmethods;
   std::function< std::string() > secret_fn;
+  std::function< std::string(json_object)> challenge_fn;
 
   client_credentials() = default;
   client_credentials(std::string realm_) : realm(std::move(realm_)) {}
@@ -496,14 +500,14 @@ public:
   /** Perform WAMP HELLO for a client-mode instance. Should be invoked
    * immediately following wamp_session construction. The credentials are used
    * with wampcra authentication. */
-  std::future<void> hello(client_credentials);
+  std::future<bool> hello(client_credentials);
 
   //@{
   /** Perform WAMP HELLO for a client-mode instance. Should be invoked
    * immediately following wamp_session construction. Does not offer to
    * authenticate with peer. */
-  std::future<void> hello(const std::string& realm);
-  std::future<void> hello(const std::string& realm, const std::string& userid);
+  std::future<bool> hello(const std::string& realm);
+  std::future<bool> hello(const std::string& realm, const std::string& userid);
   //@}
 
   ~wamp_session();
@@ -868,6 +872,7 @@ private:
   t_request_id m_next_request_id;
 
   std::function< std::string() > m_client_secret_fn;
+  std::function< std::string(json_object) > m_client_challenge_fn;
 
   std::string m_realm;
   mutable std::mutex m_realm_lock;
@@ -920,7 +925,7 @@ private:
 
   bool user_cb_allowed() const;
 
-  std::future<void> hello_common(const std::string& realm,
+  std::future<bool> hello_common(const std::string& realm,
                                  std::pair<bool, std::string> user);
 
   void check_hello(const std::string& realm,
@@ -956,6 +961,7 @@ private:
   std::unique_ptr<protocol> m_proto;
 
   std::promise< void > m_promise_on_open;
+  std::promise< bool > m_promise_on_open_or_fail;
 
   options m_options;
 
